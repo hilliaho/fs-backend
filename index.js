@@ -1,7 +1,10 @@
 const express = require('express')
+const morgan = require('morgan')
 const app = express()
 
 app.use(express.json())
+morgan.token('json', function (req, res) { return JSON.stringify(req.body) })
+app.use(morgan(':method :url :status :res[content-length] - :response-time ms :json'))
 
 let persons = [
     {
@@ -11,12 +14,12 @@ let persons = [
     },
     {
         id: "2",
-        name: "Eevert Hiltunen",
+        name: "Niiskuneiti",
         number: "123456"
     },
     {
         id: "3",
-        name: "Olivia Hiltunen",
+        name: "Nipsu",
         number: "0447583290"
     }
 ]
