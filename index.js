@@ -55,18 +55,14 @@ app.delete('/api/persons/:id', (request, response) => {
 })
 
 app.put('/api/persons/:id', (request, response, next) => {
-    const body = request.body
-    const person = {
-        name: body.name,
-        number: body.number,
-    }
-    console.log('update', person.name, person.number)
-    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+    const { name, number } = request.body
+
+    Person.findByIdAndUpdate(request.params.id, { name, number }, { new: true, runValidators: true, context: 'query' })
         .then(updatedPerson => {
             if (updatedPerson) {
                 response.json(updatedPerson)
             } else {
-                response.status(404).json({ error: 'Person not found' })  // Jos henkilöä ei löydy
+                response.status(404).json({ error: 'Person not found' })
             }
         })
         .catch(error => next(error))
@@ -98,6 +94,8 @@ const errorHandler = (error, request, response, next) => {
 
     if (error.name === 'CastError') {
         return response.status(400).send({ error: 'malformatted id' })
+    } else if (error.name === 'ValidationError') {
+        return response.status(400).json({ error: error.message })
     }
 
     next(error)
