@@ -18,32 +18,58 @@ app.get('/', (request, response) => {
 app.get('/api/persons', (request, response) => {
     Person.find({}).then(persons => {
         response.json(persons)
-    })
+    }).catch(error => next(error))
 })
 
-app.get('/api/persons/:id', (request, response) => {
-    Person.findById(request.params.id).then(person => {
-        response.json(person)
-    })
+app.get('/api/persons/:id', (request, response, next) => {
+    Person.findById(request.params.id)
+        .then(person => {
+            person ? (
+                response.json(person)
+            ) : (
+                response.status(404).end()
+            )
+        })
+        .catch(error => next(error))
 })
 
 const generateInfo = () => {
-    const row1 = `<p>Phonebook has info for ${persons.length} people</p>`
-    const now = new Date()
-    const row2 = `<p>${now}</p>`
-    const info = row1 + row2
-    return (info)
-}
+    return Person.countDocuments({}).then(count => {
+        const row1 = `<p>Phonebook has info for ${count} people</p>`;
+        const now = new Date();
+        const row2 = `<p>${now}</p>`;
+        return row1 + row2;
+    });
+};
 
 app.get('/info', (request, response) => {
-    response.send(generateInfo())
-})
+    generateInfo().then(info => {
+        response.send(info);
+    });
+});
+
 
 app.delete('/api/persons/:id', (request, response) => {
-    const id = request.params.id
-    persons = persons.filter(person => person.id !== id)
-
+    Person.findByIdAndDelete(request.params.id)
     response.status(204).end()
+})
+
+app.put('/api/persons/:id', (request, response, next) => {
+    const body = request.body
+    const person = {
+        name: body.name,
+        number: body.number,
+    }
+    console.log('update', person.name, person.number)
+    Person.findByIdAndUpdate(request.params.id, person, { new: true })
+        .then(updatedPerson => {
+            if (updatedPerson) {
+                response.json(updatedPerson)
+            } else {
+                response.status(404).json({ error: 'Person not found' })  // Jos henkilöä ei löydy
+            }
+        })
+        .catch(error => next(error))
 })
 
 app.post('/api/persons', (request, response) => {
@@ -64,10 +90,20 @@ app.post('/api/persons', (request, response) => {
     })
     person.save().then(savedPerson => {
         response.json(savedPerson)
-    }
-    )
+    }).catch(error => next(error))
 })
 
+const errorHandler = (error, request, response, next) => {
+    console.error(error.message)
+
+    if (error.name === 'CastError') {
+        return response.status(400).send({ error: 'malformatted id' })
+    }
+
+    next(error)
+}
+
+app.use(errorHandler)
 const PORT = process.env.PORT || 3001
 app.listen(PORT)
 console.log(`Server running on port ${PORT}`)
