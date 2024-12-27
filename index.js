@@ -15,7 +15,7 @@ app.get('/', (request, response) => {
     response.send('<h1>Hello World!</h1>')
 })
 
-app.get('/api/persons', (request, response) => {
+app.get('/api/persons', (request, response, next) => {
     Person.find({}).then(persons => {
         response.json(persons)
     }).catch(error => next(error))
@@ -72,7 +72,7 @@ app.put('/api/persons/:id', (request, response, next) => {
         .catch(error => next(error))
 })
 
-app.post('/api/persons', (request, response) => {
+app.post('/api/persons', (request, response, next) => {
     const body = request.body
     if (!body.name) {
         return response.status(400).json({
